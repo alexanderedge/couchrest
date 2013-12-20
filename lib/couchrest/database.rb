@@ -57,13 +57,13 @@ module CouchRest
     end
 
     # Replicates via "pulling" from another database to this database. Makes no attempt to deal with conflicts.
-    def replicate_from(other_db, continuous = false, create_target = false, doc_ids = nil, filter = nil, query_params = nil)
-      replicate(other_db, continuous, :target => @root, :create_target => create_target, :doc_ids => doc_ids, :filter => filter, :query_params => query_params)
+    def replicate_from(other_db, continuous = false, create_target = false, doc_ids = nil, filter = nil, query_params = nil, persistent = false)
+      replicate(other_db, continuous, :target => @root, :create_target => create_target, :doc_ids => doc_ids, :filter => filter, :query_params => query_params, :persistent => persistent)
     end
 
     # Replicates via "pushing" to another database. Makes no attempt to deal with conflicts.
-    def replicate_to(other_db, continuous = false, create_target = false, doc_ids = nil, filter = nil, query_params = nil)
-      replicate(other_db, continuous, :source => @root, :create_target => create_target, :doc_ids => doc_ids, :filter => filter, :query_params => query_params)
+    def replicate_to(other_db, continuous = false, create_target = false, doc_ids = nil, filter = nil, query_params = nil, persistent = false)
+      replicate(other_db, continuous, :source => @root, :create_target => create_target, :doc_ids => doc_ids, :filter => filter, :query_params => query_params, :persistent => persistent)
     end
 
     # DELETE the database itself. This is not undoable and could be rather
@@ -354,6 +354,7 @@ module CouchRest
       raise ArgumentError, "must provide a target or source option" unless (options.key?(:target) || options.key?(:source))
       doc_ids = options.delete(:doc_ids)
       filter = options.delete(:filter)
+      persistent = options.delete(:persistent)
       query_params = options.delete(:query_params)
       payload = options
       if options.has_key?(:target)
@@ -365,8 +366,10 @@ module CouchRest
       payload[:doc_ids] = doc_ids if doc_ids
       payload[:filter] = filter if filter
       payload[:query_params] = query_params if query_params
-      puts "Foo payload #{payload}"
-      CouchRest.post "#{@host}/_replicator", payload
+      if persistent
+        CouchRest.post "#{@host}/_replicate", payload
+      else
+        CouchRest.post "#{@host}/_replicator", payload
     end
 
     def uri_for_attachment(doc, name)
