@@ -3,7 +3,7 @@ require File.expand_path("../../spec_helper", __FILE__)
 class Video < CouchRest::Document; end
 
 describe CouchRest::Document do
-  
+
   before(:all) do
     @couch = CouchRest.new
     @db    = @couch.database!(TESTDB)
@@ -160,7 +160,7 @@ describe CouchRest::Document do
       Video.new.database.should == @db
       Video.use_database nil
     end
-    
+
     it "should be overwritten by instance" do
       db = @couch.database('test')
       article = Video.new
@@ -173,7 +173,7 @@ describe CouchRest::Document do
 
   describe  "new" do
     before(:each) do
-      @doc = CouchRest::Document.new("key" => [1,2,3], :more => "values")    
+      @doc = CouchRest::Document.new("key" => [1,2,3], :more => "values")
     end
     it "should create itself from a Hash" do
       @doc["key"].should == [1,2,3]
@@ -187,22 +187,47 @@ describe CouchRest::Document do
       @doc.id = 1
       @doc.id.should eql(1)
     end
-    
+
     it "should freak out when saving without a database" do
       lambda{@doc.save}.should raise_error(ArgumentError)
     end
-    
+
+  end
+
+  describe  "user doc" do
+    before(:all) do
+      @users_db = @couch.database("_users")
+      @username = 'theuser' + Time.now.tv_sec.to_s
+      @doc = CouchRest::UserDocument.new(@username, 'password')
+      @resp = @users_db.save_doc(@doc)
+    end
+    it "should have a user id" do
+      @doc.id.should =~ /org\.couchdb\.user:theuser/
+    end
+    it "should have a name" do
+      @doc['name'].should_not be_nil
+    end
+    it "should have a password_sha" do
+      @doc['password_sha'].should_not be_nil
+    end
+    it "should have a salt" do
+      @doc['salt'].should_not be_nil
+    end
+    it "should save successfully" do
+      saveduser = @users_db.get(@doc.id)
+      saveduser['name'].should == @username
+    end
   end
 
   # move to database spec
   describe  "saving using a database" do
     before(:all) do
-      @doc = CouchRest::Document.new("key" => [1,2,3], :more => "values")    
-      @db = reset_test_db!    
+      @doc = CouchRest::Document.new("key" => [1,2,3], :more => "values")
+      @db = reset_test_db!
       @resp = @db.save_doc(@doc)
     end
     it "should apply the database" do
-      @doc.database.should == @db    
+      @doc.database.should == @db
     end
     it "should get id and rev" do
       @doc.id.should == @resp["id"]
@@ -251,7 +276,7 @@ describe CouchRest::Document do
       @doc["more"] = "keys"
       @doc.save
       @db.get(@resp['id'])["more"].should == "keys"
-      @doc["more"] = "these keys"    
+      @doc["more"] = "these keys"
       @doc.save
       @db.get(@resp['id'])["more"].should == "these keys"
     end
@@ -270,7 +295,7 @@ describe CouchRest::Document do
       lambda{@db.get @resp['id']}.should raise_error
     end
     it "should error when there's no db" do
-      @doc = CouchRest::Document.new("key" => [1,2,3], :more => "values")    
+      @doc = CouchRest::Document.new("key" => [1,2,3], :more => "values")
       lambda{@doc.destroy}.should raise_error(ArgumentError)
     end
   end
