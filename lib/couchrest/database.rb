@@ -370,6 +370,7 @@ module CouchRest
         CouchRest.post "#{@host}/_replicate", payload
       else
         CouchRest.post "#{@host}/_replicator", payload
+      end
     end
 
     def uri_for_attachment(doc, name)
